@@ -24,6 +24,18 @@ class Boids:
         self.energy = np.random.uniform(0.1, 0.9, n).astype(np.float32)
         self.age    = np.random.uniform(0, 80, n).astype(np.float32)
 
+    def reset(self) -> None:
+        n = self.count
+        hw, hh = WORLD_W / 2, WORLD_H / 2
+        self.px = np.random.uniform(-hw * 0.88, hw * 0.88, n).astype(np.float32)
+        self.py = np.random.uniform(-hh * 0.88, hh * 0.88, n).astype(np.float32)
+        angles  = np.random.uniform(0, math.tau, n)
+        speeds  = np.random.uniform(28, 55, n)
+        self.vx = (np.cos(angles) * speeds).astype(np.float32)
+        self.vy = (np.sin(angles) * speeds).astype(np.float32)
+        self.energy = np.random.uniform(0.1, 0.9, n).astype(np.float32)
+        self.age    = np.zeros(n, dtype=np.float32)
+
     def update(self, dt: float, audio: dict) -> None:
         rms     = float(audio.get("rms",     0))
         bass    = float(audio.get("bass",    0))

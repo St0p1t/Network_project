@@ -14,6 +14,7 @@ import json
 import math
 import os
 import struct
+from contextlib import asynccontextmanager
 from typing import Dict, List
 
 import numpy as np
@@ -101,7 +102,7 @@ def _pack_boids() -> bytes:
 
 async def _sim_loop() -> None:
     target     = 1.0 / 30.0
-    loop       = asyncio.get_event_loop()
+    loop       = asyncio.get_running_loop()
     prev       = loop.time()
     sim_time   = 0.0
 
@@ -132,12 +133,13 @@ async def _sim_loop() -> None:
 
 # ── FastAPI ───────────────────────────────────────────────────────────────────
 
-app = FastAPI(docs_url=None, redoc_url=None)
-
-
-@app.on_event("startup")
-async def _startup() -> None:
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
     asyncio.create_task(_sim_loop())
+    yield
+
+
+app = FastAPI(docs_url=None, redoc_url=None, lifespan=_lifespan)
 
 
 @app.websocket("/ws")
@@ -155,6 +157,10 @@ async def _ws(ws: WebSocket) -> None:
             data = json.loads(text)
             if data.get("type") == "audio":
                 current_audio.update(data["state"])
+            elif data.get("type") == "reset":
+                boids.reset()
+                flora.reset()
+                events.reset()
     except WebSocketDisconnect:
         pass
     finally:

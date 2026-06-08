@@ -58,6 +58,13 @@ export class ResonanceWS {
     }
   }
 
+  /** Request full world reset on server. */
+  sendReset() {
+    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+      this._ws.send(JSON.stringify({ type: 'reset' }));
+    }
+  }
+
   close() {
     this._alive = false;
     this._ws?.close();

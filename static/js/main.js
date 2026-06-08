@@ -14,6 +14,9 @@ const fgCtx    = fgCanvas.getContext('2d');
 let W = window.innerWidth;
 let H = window.innerHeight;
 
+// ── WebGL background ──────────────────────────────────────────────────────────
+let envGL = initEnvGL(bgCanvas);
+
 function resize() {
   W = window.innerWidth; H = window.innerHeight;
   bgCanvas.width  = fgCanvas.width  = W;
@@ -22,9 +25,6 @@ function resize() {
 }
 resize();
 window.addEventListener('resize', resize);
-
-// ── WebGL background ──────────────────────────────────────────────────────────
-let envGL = initEnvGL(bgCanvas);
 
 // ── Shared world state ────────────────────────────────────────────────────────
 const state = {
@@ -72,6 +72,9 @@ document.addEventListener('keydown', e => {
   if (e.key === 'f' || e.key === 'F') {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
     else document.exitFullscreen().catch(()=>{});
+  }
+  if ((e.key === 'r' || e.key === 'R') && started) {
+    resetWorld();
   }
 });
 
@@ -193,7 +196,6 @@ const AUDIO_SEND_INTERVAL = 50; // ms
 
 function frame(now) {
   requestAnimationFrame(frame);
-  if (!started) return;
 
   const time = now / 1000;
   const dt   = Math.min((now - (frame._prev || now)) / 1000, 0.05);
@@ -201,14 +203,16 @@ function frame(now) {
 
   audio.update(dt);
 
+  // Background always renders (visible behind welcome screen too)
+  envGL?.draw(audio.state, time);
+
+  if (!started) return;
+
   // Send audio state to server every 50ms
   if (now - lastAudioSend > AUDIO_SEND_INTERVAL) {
     ws?.sendAudio(audio.state);
     lastAudioSend = now;
   }
-
-  // Background
-  envGL?.draw(audio.state, time);
 
   // Foreground
   fgCtx.clearRect(0, 0, W, H);
@@ -219,23 +223,44 @@ function frame(now) {
   updateDebug();
 }
 
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
+function resetWorld() {
+  state.boids  = [];
+  state.flora  = [];
+  state.events = { p: [], r: [] };
+  ws?.sendReset();
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
-const welcome = document.getElementById('welcome');
+const welcome  = document.getElementById('welcome');
 const startBtn = document.getElementById('start-btn');
+const resetBtn = document.getElementById('reset-btn');
 
 startBtn.addEventListener('click', async () => {
-  startBtn.textContent = 'Initialising…';
+  startBtn.textContent = 'Инициализация…';
   startBtn.disabled    = true;
 
-  try { await audio.init(); }
-  catch (_) { audio.autonomous = true; }
+  try {
+    // Таймаут 5 с — чтобы не зависнуть при игнорировании диалога микрофона
+    await Promise.race([
+      audio.init(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+    ]);
+  } catch (_) {
+    audio.autonomous = true;
+  }
 
   startWS();
   started = true;
 
+  resetBtn.classList.add('visible');
+
   welcome.classList.add('fade-out');
   welcome.addEventListener('transitionend', () => welcome.style.display = 'none', { once: true });
 }, { once: true });
+
+resetBtn.addEventListener('click', resetWorld);
 
 requestAnimationFrame(frame);

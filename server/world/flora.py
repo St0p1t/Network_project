@@ -72,6 +72,11 @@ class Flora:
         self._onset_cd  = 0.0
         self._dirty     = True   # send full state on first connection
 
+    def reset(self) -> None:
+        self._branches.clear()
+        self._onset_cd = 0.0
+        self._dirty    = True
+
     def update(self, dt: float, audio: dict) -> None:
         self._onset_cd = max(0.0, self._onset_cd - dt)
         onset   = audio.get("onset",   0)

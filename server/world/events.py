@@ -36,6 +36,15 @@ class Events:
         self._rh    = 0
         self._cd    = 0.0
 
+    def reset(self) -> None:
+        for p in self._pool:
+            p.alive = False
+        for r in self._rings:
+            r.alive = False
+        self._ph = 0
+        self._rh = 0
+        self._cd = 0.0
+
     def update(self, dt: float, audio: dict) -> None:
         self._cd = max(0.0, self._cd - dt)
         onset = audio.get("onset", 0)
