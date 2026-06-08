@@ -1,0 +1,24 @@
+# ── Production: uncomment and set your domain ────────────────────────────────
+# resonance.example.com {
+#     reverse_proxy app:8000
+# }
+
+# ── Local / self-signed TLS (default) ────────────────────────────────────────
+:443 {
+    tls internal
+
+    reverse_proxy app:8000 {
+        # Keep WebSocket connections alive
+        transport http {
+            keepalive 30s
+        }
+        # Pass real client IP
+        header_up X-Real-IP {remote_host}
+    }
+
+    encode gzip
+}
+
+:80 {
+    redir https://{host}{uri} permanent
+}

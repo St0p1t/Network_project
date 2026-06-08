@@ -1,0 +1,67 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+#bg-canvas, #fg-canvas {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+#bg-canvas { z-index: 1; }
+#fg-canvas { z-index: 2; background: transparent; }
+
+/* ── Welcome ─────────────────────────────────────────────────────────────── */
+#welcome {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.93); backdrop-filter: blur(8px);
+  transition: opacity 0.8s ease;
+}
+#welcome.fade-out { opacity: 0; pointer-events: none; }
+
+.welcome-inner {
+  text-align: center; color: #d8e8ff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  max-width: 460px; padding: 2rem;
+}
+.welcome-inner h1 {
+  font-size: clamp(2.4rem, 8vw, 4rem); font-weight: 200;
+  letter-spacing: 0.28em; text-transform: uppercase; color: #90bcff;
+  margin-bottom: 0.5rem;
+}
+.tagline { font-size: 1.05rem; color: #7888a8; margin-bottom: 2rem; font-weight: 300; }
+
+.privacy-note {
+  font-size: 0.83rem; color: #485868; margin-bottom: 2.4rem;
+  line-height: 1.7; border: 1px solid #1a3050; border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+#start-btn {
+  background: transparent; border: 1px solid #3878b8; color: #78b0f8;
+  font-size: 0.95rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.75rem 2.2rem; border-radius: 4px; cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  font-family: inherit; margin-bottom: 1rem;
+}
+#start-btn:hover { background: #3878b820; border-color: #78b0f8; color: #b8d8ff; }
+#start-btn:disabled { opacity: 0.5; cursor: default; }
+.hint { font-size: 0.78rem; color: #283848; }
+
+/* ── Debug overlay ──────────────────────────────────────────────────────── */
+#debug-overlay {
+  position: fixed; top: 1rem; right: 1rem; z-index: 300;
+  background: rgba(0,0,0,0.78); border: 1px solid #182838;
+  border-radius: 6px; padding: 0.7rem 0.9rem;
+  font-family: 'Consolas','Menlo',monospace; font-size: 0.7rem;
+  color: #507090; min-width: 200px;
+}
+#debug-overlay.hidden { display: none; }
+.debug-title { color: #3878b8; margin-bottom: 0.5rem; font-size: 0.73rem; letter-spacing: 0.1em; }
+.debug-hint  { color: #283848; font-size: 0.62rem; }
+.debug-row   { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.22rem; }
+.debug-row > span:first-child { width: 46px; color: #486880; }
+.bar-wrap { flex: 1; height: 6px; background: #0d1820; border-radius: 3px; overflow: hidden; }
+.bar      { height: 100%; width: 0%; background: #1860a0; border-radius: 3px; transition: width 0.05s linear; }
+.onset-bar { background: #d05820; }
+.sil-bar   { background: #186050; }
+.val { width: 34px; text-align: right; color: #384858; }
+.debug-fps { margin-top: 0.4rem; color: #2a4050; font-size: 0.66rem; }

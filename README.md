@@ -1,0 +1,229 @@
+# Resonance
+
+Браузерная генеративная инсталляция: экосистема из частиц, существ и растений реагирует на микрофон в реальном времени. Говори, пой, хлопай — мир меняется. Тихо — мир дремлет.
+
+---
+
+## Архитектура
+
+```
+Браузер                               Python сервер (FastAPI)
+──────────────────────────────────    ──────────────────────────────────────
+Web Audio API → анализ звука          asyncio sim-loop @ 30 fps
+  rms, bass, mid, high,               ├── world/boids.py   (numpy, O(n²))
+  pitch, onset, silence               ├── world/flora.py   (ветвящиеся нити)
+        │                             └── world/events.py  (частицы + кольца)
+        │  JSON {"type":"audio",...}        │
+        │ ─────────────────────────────→   │  обновляет current_audio
+        │                                  │
+        │  binary frame (4.9 KB/кадр)  ←──┤  позиции boids (int16 × 4 на boid)
+        │  JSON {"type":"fe",...}       ←──┘  флора + события
+        ↓
+  env_gl.js    — WebGL фон (тот же GLSL шейдер)
+  main.js      — Canvas 2D: boids, флора, частицы
+```
+
+### Почему один воркер
+
+Симуляция живёт в оперативной памяти. Несколько uvicorn-воркеров создали бы несколько независимых миров. Один воркер + asyncio — правильное решение для stateful real-time приложения.
+
+### Протокол бинарного фрейма (boids)
+
+```
+[uint32 count] + count × [int16 px][int16 py][uint16 angle][uint8 energy]
+```
+
+Итого на 700 boids: **4 + 700 × 7 = 4 904 байта** за кадр.  
+При 30 fps: ~148 KB/с на клиента — в 20× меньше, чем JSON.
+
+---
+
+## Требования
+
+| Вариант | Что нужно |
+|---|---|
+| Локальная разработка | Python ≥ 3.10 |
+| Docker (рекомендуется) | Docker + Docker Compose |
+
+---
+
+## Способ 1 — Локальный запуск (без Docker)
+
+### Шаг 1. Создай виртуальное окружение и установи зависимости
+
+```bash
+cd resonance_py
+
+python -m venv .venv
+source .venv/bin/activate        # Linux / macOS
+# .venv\Scripts\activate         # Windows
+
+pip install -r server/requirements.txt
+```
+
+### Шаг 2. Запусти сервер
+
+```bash
+uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Шаг 3. Открой браузер
+
+```
+http://localhost:8000
+```
+
+`localhost` — безопасный источник, микрофон работает без HTTPS.
+
+`--reload` включает автоперезагрузку при изменении Python-файлов.
+
+---
+
+## Способ 2 — Docker (локальный HTTPS, рекомендуется)
+
+Caddy автоматически создаёт самоподписанный сертификат (`tls internal`).  
+Это нужно, если хочешь открыть инсталляцию **с телефона или планшета** в той же сети.
+
+### Шаг 1. Собери и запусти
+
+```bash
+cd resonance_py
+docker compose up --build -d
+```
+
+Первый раз Docker скачает образы `python:3.12-slim` и `caddy:2-alpine`, соберёт контейнер. Занимает 1–3 минуты.
+
+### Шаг 2. Открой браузер
+
+```
+https://localhost
+```
+
+**Браузер покажет предупреждение о сертификате** — это ожидаемо для самоподписанного CA:
+
+- **Chrome/Edge**: «Дополнительно» → «Перейти на localhost»
+- **Firefox**: «Дополнительно» → «Принять риск и продолжить»
+- **Safari**: «Показать подробности» → «Посетить сайт»
+
+После единократного принятия — микрофон работает как обычно.
+
+### Открыть с другого устройства в сети
+
+Узнай IP своей машины:
+
+```bash
+ip addr show | grep "inet " | grep -v 127   # Linux
+ipconfig                                     # Windows
+```
+
+На телефоне/планшете открой `https://192.168.x.x` — прими предупреждение сертификата.
+
+### Управление контейнерами
+
+```bash
+docker compose logs -f          # следить за логами
+docker compose down             # остановить
+docker compose up -d            # запустить снова (без пересборки)
+docker compose up --build -d    # пересобрать и запустить
+```
+
+---
+
+## Способ 3 — Docker с настоящим доменом (продакшн)
+
+Caddy сам получит сертификат Let's Encrypt, ничего настраивать вручную не нужно.
+
+### Шаг 1. Направь DNS на сервер
+
+```
+resonance.example.com  A  <IP сервера>
+```
+
+### Шаг 2. Убедись, что порты 80 и 443 открыты
+
+### Шаг 3. Отредактируй `Caddyfile`
+
+Замени содержимое файла:
+
+```caddy
+resonance.example.com {
+    reverse_proxy app:8000
+    encode gzip
+}
+
+:80 {
+    redir https://{host}{uri} permanent
+}
+```
+
+### Шаг 4. Деплой
+
+```bash
+docker compose up --build -d
+```
+
+Сертификат выпускается автоматически при первом запросе. Хранится в томе `caddy_data`.
+
+---
+
+## Структура проекта
+
+```
+resonance_py/
+├── server/
+│   ├── main.py              # FastAPI: WebSocket + sim-loop + static files
+│   ├── requirements.txt
+│   └── world/
+│       ├── boids.py         # numpy boids, full O(n²) пофрейм
+│       ├── flora.py         # ветвящиеся нити, dirty-флаг
+│       └── events.py        # пул частиц + кольца ударных волн
+├── static/
+│   ├── index.html
+│   ├── style.css
+│   └── js/
+│       ├── main.js          # render-loop, Canvas 2D рендер
+│       ├── audio.js         # Web Audio API + автономный режим
+│       ├── ws.js            # WebSocket клиент + декодер бинарного фрейма
+│       └── env_gl.js        # raw WebGL background (тот же GLSL шейдер)
+├── Dockerfile
+├── docker-compose.yml
+└── Caddyfile
+```
+
+---
+
+## Управление
+
+| Клавиша | Действие |
+|---|---|
+| `D` | Дебаг-оверлей (RMS, bass, mid, high, pitch, onset, silence, fps, статус ws) |
+| `F` | Полноэкранный режим |
+
+---
+
+## Автономный режим
+
+Если в микрофоне отказано — клиент генерирует синусоидальные аудио-значения и отправляет их на сервер. Сервер не знает, реальный ли это звук или автономный. Мир живёт в любом случае.
+
+---
+
+## Настройка
+
+**Количество boids** — файл [server/world/boids.py](server/world/boids.py), параметр конструктора:
+
+```python
+# В server/main.py
+boids = Boids(count=400)   # облегчённый вариант
+```
+
+**Частота симуляции** — в `server/main.py`:
+
+```python
+target = 1.0 / 20.0   # 20 fps вместо 30 fps
+```
+
+---
+
+## Конфиденциальность
+
+Клиент отправляет на сервер **только числа** (rms, bass, mid, high, pitch, onset, silence) — не аудиосигнал, не сэмплы, не запись голоса. WebSocket трафик шифруется через HTTPS/WSS. Сервер не пишет данные на диск.

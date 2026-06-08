@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resonance — Living World</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- WebGL background (filled by env_gl.js) -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Canvas 2D — boids / flora / events -->
+  <canvas id="fg-canvas"></canvas>
+
+  <!-- Welcome screen -->
+  <div id="welcome">
+    <div class="welcome-inner">
+      <h1>Resonance</h1>
+      <p class="tagline">A living world shaped by your voice</p>
+      <div class="privacy-note">
+        &#x1F512; Sound is processed locally in your browser.<br />
+        Nothing is recorded or transmitted anywhere.
+      </div>
+      <button id="start-btn">Enter the World</button>
+      <p class="hint">Requires microphone access &mdash; or runs autonomously without it</p>
+    </div>
+  </div>
+
+  <!-- Debug overlay -->
+  <div id="debug-overlay" class="hidden">
+    <div class="debug-title">Audio State <span class="debug-hint">[D] toggle</span></div>
+    <div class="debug-row"><span>RMS</span>   <div class="bar-wrap"><div class="bar"          id="db-rms"></div></div>   <span class="val" id="dv-rms">0.00</span></div>
+    <div class="debug-row"><span>Bass</span>  <div class="bar-wrap"><div class="bar"          id="db-bass"></div></div>  <span class="val" id="dv-bass">0.00</span></div>
+    <div class="debug-row"><span>Mid</span>   <div class="bar-wrap"><div class="bar"          id="db-mid"></div></div>   <span class="val" id="dv-mid">0.00</span></div>
+    <div class="debug-row"><span>High</span>  <div class="bar-wrap"><div class="bar"          id="db-high"></div></div>  <span class="val" id="dv-high">0.00</span></div>
+    <div class="debug-row"><span>Pitch</span> <div class="bar-wrap"><div class="bar"          id="db-pitch"></div></div> <span class="val" id="dv-pitch">0.00</span></div>
+    <div class="debug-row"><span>Onset</span> <div class="bar-wrap"><div class="bar onset-bar" id="db-onset"></div></div> <span class="val" id="dv-onset">0.00</span></div>
+    <div class="debug-row"><span>Silence</span><div class="bar-wrap"><div class="bar sil-bar"  id="db-sil"></div></div>  <span class="val" id="dv-sil">0.00</span></div>
+    <div class="debug-fps" id="db-fps">-- fps</div>
+    <div class="debug-fps" id="db-ws">ws: --</div>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
