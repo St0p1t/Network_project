@@ -234,9 +234,17 @@ function resetWorld() {
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
-const welcome  = document.getElementById('welcome');
-const startBtn = document.getElementById('start-btn');
-const resetBtn = document.getElementById('reset-btn');
+const welcome    = document.getElementById('welcome');
+const startBtn   = document.getElementById('start-btn');
+const controls   = document.getElementById('controls');
+const resetBtn   = document.getElementById('reset-btn');
+const sensSlider = document.getElementById('sens-slider');
+const sensVal    = document.getElementById('sens-val');
+
+sensSlider.addEventListener('input', () => {
+  audio.sensitivity = Number(sensSlider.value);
+  sensVal.textContent = sensSlider.value;
+});
 
 startBtn.addEventListener('click', async () => {
   startBtn.textContent = 'Инициализация…';
@@ -255,7 +263,7 @@ startBtn.addEventListener('click', async () => {
   startWS();
   started = true;
 
-  resetBtn.classList.add('visible');
+  controls.classList.add('visible');
 
   welcome.classList.add('fade-out');
   welcome.addEventListener('transitionend', () => welcome.style.display = 'none', { once: true });

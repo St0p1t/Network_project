@@ -28,31 +28,31 @@
         <div class="sound-guide-title">Как звуки влияют на мир</div>
         <div class="sound-item">
           <span class="si-icon">💥</span>
-          <span><strong>Резкий звук</strong> (хлопок, удар, слог) — стая в панике разлетается, взрыв частиц и ударная волна, вырастают ветви</span>
+          <span><strong>Резкий звук</strong> (хлопок, удар, слог) — стая в панике разлетается в случайные стороны; вспыхивают частицы и ударная волна; вырастают светящиеся ветви</span>
         </div>
         <div class="sound-item">
           <span class="si-icon">🔊</span>
-          <span><strong>Громкость</strong> — скорость и яркость существ, оживает и светится фон</span>
+          <span><strong>Громкость</strong> — скорость и хаос движений существ, пульсация фона; чем громче — тем стремительнее разлёт и длиннее ветви</span>
         </div>
         <div class="sound-item">
           <span class="si-icon">🎵</span>
-          <span><strong>Бас (0–250 Гц)</strong> — стая рассыпается на отдельные группы, пульсация фона</span>
+          <span><strong>Бас (0–250 Гц)</strong> — расширяет личное пространство каждого существа, стая разбивается на отдельные группы; тяжёлые вспышки фона</span>
         </div>
         <div class="sound-item">
           <span class="si-icon">🗣️</span>
-          <span><strong>Голос и речь (250–2000 Гц)</strong> — стая собирается в плотные кластеры</span>
+          <span><strong>Голос и речь (250–2000 Гц)</strong> — переливы и мерцание фона; голос оживляет мир</span>
         </div>
         <div class="sound-item">
           <span class="si-icon">✨</span>
-          <span><strong>Высокие звуки (2–8 кГц)</strong> — мерцание и блёстки на фоне</span>
+          <span><strong>Высокие звуки (2–8 кГц)</strong> — искры и блёстки на фоне, воздушное сияние</span>
         </div>
         <div class="sound-item">
           <span class="si-icon">🎼</span>
-          <span><strong>Тональность</strong> — цвет всего в мире: низкая → фиолетовый, высокая → голубой</span>
+          <span><strong>Тональность</strong> — цвет всего в мире: низкий тон → фиолетовый, высокий → голубой</span>
         </div>
         <div class="sound-item">
           <span class="si-icon">🔇</span>
-          <span><strong>Тишина</strong> — существа медленно сходятся к центру, мир темнеет, вырастают ветви</span>
+          <span><strong>Тишина</strong> — существа медленно сходятся к нескольким блуждающим точкам (3–10 кластеров, выбираются случайно при старте); в глубокой тишине медленно растут ветви</span>
         </div>
       </div>
 
@@ -61,8 +61,21 @@
     </div>
   </div>
 
-  <!-- Кнопка сброса (появляется после входа) -->
-  <button id="reset-btn" title="Сбросить мир [R]">↺ Сбросить</button>
+  <!-- Панель управления (появляется после входа) -->
+  <div id="controls">
+    <div id="sensitivity-wrap">
+      <div class="sens-header">
+        <span class="sens-title">Чувствительность микрофона</span>
+        <span id="sens-val">5</span>
+      </div>
+      <div class="sens-row">
+        <span class="sens-edge">Слабо</span>
+        <input type="range" id="sens-slider" min="1" max="10" value="5" step="1" />
+        <span class="sens-edge">Резко</span>
+      </div>
+    </div>
+    <button id="reset-btn" title="Сбросить мир [R]">↺ Сбросить</button>
+  </div>
 
   <!-- Отладочная панель -->
   <div id="debug-overlay" class="hidden">

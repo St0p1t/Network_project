@@ -13,6 +13,7 @@ export class AudioAnalyzer {
     this.onset   = 0;
     this.silence = 1;
 
+    this.sensitivity = 5;  // 1–10; 5 = default thresholds
     this.autonomous = true;
     this._ctx     = null;
     this._an      = null;
@@ -75,12 +76,13 @@ export class AudioAnalyzer {
     for (let i = 1; i < bins; i++) { wS += i * this._fd[i]; wT += this._fd[i]; }
     this.pitch += 0.06 * (Math.min(1, (wT > 0 ? wS / wT : 0) / (bins * 0.45)) - this.pitch);
 
-    // Onset detection
+    // Onset detection — thresholds scale with sensitivity (5 = default)
+    const sens = this.sensitivity / 5;
     this._onsetCd = Math.max(0, this._onsetCd - dt);
     this.onset    = Math.max(0, this.onset - dt * 5);
     if (this._onsetCd <= 0) {
       const d = rawRms - this._prevRms;
-      if (d > 0.045 && rawRms > 0.035) {
+      if (d > 0.045 / sens && rawRms > 0.035 / sens) {
         this.onset = Math.min(1, d * 9);
         this._onsetCd = 0.12;
       }
@@ -88,8 +90,8 @@ export class AudioAnalyzer {
     this._prevRms = rawRms;
 
     // Silence
-    if (rawRms < 0.012) this._silTimer = Math.min(1, this._silTimer + dt * 0.4);
-    else                this._silTimer = Math.max(0, this._silTimer - dt * 2.5);
+    if (rawRms < 0.012 / sens) this._silTimer = Math.min(1, this._silTimer + dt * 0.4);
+    else                       this._silTimer = Math.max(0, this._silTimer - dt * 2.5);
     this.silence = this._silTimer;
   }
 
