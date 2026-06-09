@@ -116,9 +116,21 @@
     <button id="home-btn"  title="Вернуться в меню">← Меню</button>
   </div>
 
+  <!-- Панель клавиш (левый верхний угол) -->
+  <div id="keys-panel">
+    <div class="keys-title">Клавиши</div>
+    <div class="keys-row"><kbd>D</kbd><span>Панель аудио</span></div>
+    <div class="keys-row"><kbd>P</kbd><span>Заморозить панель</span></div>
+    <div class="keys-row"><kbd>R</kbd><span>Сбросить мир</span></div>
+    <div class="keys-row"><kbd>F</kbd><span>Полный экран</span></div>
+  </div>
+
   <!-- Отладочная панель -->
   <div id="debug-overlay">
-    <div class="debug-title">Аудио&nbsp;<span class="debug-hint">[D] показать/скрыть · [R] сбросить · [F] полный экран</span></div>
+    <div class="debug-title">
+      Аудио
+      <button id="db-freeze-btn" title="Заморозить / возобновить [P]">⏸</button>
+    </div>
     <div class="debug-row"><span>RMS</span>    <div class="bar-wrap"><div class="bar"           id="db-rms"></div></div>   <span class="val" id="dv-rms">0.00</span></div>
     <div class="debug-row"><span>Бас</span>    <div class="bar-wrap"><div class="bar"           id="db-bass"></div></div>  <span class="val" id="dv-bass">0.00</span></div>
     <div class="debug-row"><span>Ср.</span>    <div class="bar-wrap"><div class="bar"           id="db-mid"></div></div>   <span class="val" id="dv-mid">0.00</span></div>

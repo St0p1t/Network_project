@@ -49,6 +49,23 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
 #start-btn:disabled { opacity: 0.5; cursor: default; }
 .hint { font-size: 0.78rem; color: #283848; }
 
+/* ── Keys panel ─────────────────────────────────────────────────────────── */
+#keys-panel {
+  position: fixed; top: 1rem; left: 1rem; z-index: 300;
+  background: rgba(0,0,0,0.78); border: 1px solid #182838;
+  border-radius: 6px; padding: 0.55rem 0.75rem;
+  font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.68rem;
+  color: #507090;
+}
+.keys-title { color: #3878b8; margin-bottom: 0.4rem; letter-spacing: 0.1em; }
+.keys-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.18rem; }
+.keys-row:last-child { margin-bottom: 0; }
+kbd {
+  display: inline-block; background: #0d1820; border: 1px solid #1a3050;
+  border-radius: 3px; padding: 0.05rem 0.35rem; color: #78a0c0;
+  font-family: inherit; font-size: 0.66rem; min-width: 18px; text-align: center;
+}
+
 /* ── Debug overlay ──────────────────────────────────────────────────────── */
 #debug-overlay {
   position: fixed; top: 1rem; right: 1rem; z-index: 300;
@@ -58,8 +75,18 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
   color: #507090; min-width: 200px;
 }
 #debug-overlay.hidden { display: none; }
-.debug-title { color: #3878b8; margin-bottom: 0.5rem; font-size: 0.73rem; letter-spacing: 0.1em; }
-.debug-hint  { color: #283848; font-size: 0.62rem; }
+.debug-title {
+  display: flex; align-items: center; justify-content: space-between;
+  color: #3878b8; margin-bottom: 0.5rem; font-size: 0.73rem; letter-spacing: 0.1em;
+}
+#debug-overlay.frozen { border-color: #604010; }
+#debug-overlay.frozen .debug-title { color: #b87820; }
+#db-freeze-btn {
+  background: transparent; border: none; color: #2a5070; cursor: pointer;
+  font-size: 0.75rem; padding: 0; line-height: 1; transition: color 0.15s;
+}
+#db-freeze-btn:hover { color: #78b0f8; }
+#debug-overlay.frozen #db-freeze-btn { color: #b87820; }
 .debug-row   { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.22rem; }
 .debug-row > span:first-child { width: 46px; color: #486880; }
 .bar-wrap { flex: 1; height: 6px; background: #0d1820; border-radius: 3px; overflow: hidden; }

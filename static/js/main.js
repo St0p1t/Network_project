@@ -55,20 +55,31 @@ function startWS() {
 // ── Debug overlay ─────────────────────────────────────────────────────────────
 const dbEl = document.getElementById('debug-overlay');
 let dbVisible = true;   // visible by default; D toggles it off/on
+let dbFrozen  = false;  // P freezes audio values in the overlay
 const dbBars = {}, dbVals = {};
 ['rms','bass','mid','high','pitch','onset'].forEach(k => {
   dbBars[k] = document.getElementById(`db-${k}`);
   dbVals[k] = document.getElementById(`dv-${k}`);
 });
-const dbSilB = document.getElementById('db-sil');
-const dbSilV = document.getElementById('dv-sil');
-const dbFps  = document.getElementById('db-fps');
-const dbWs   = document.getElementById('db-ws');
+const dbSilB     = document.getElementById('db-sil');
+const dbSilV     = document.getElementById('dv-sil');
+const dbFps      = document.getElementById('db-fps');
+const dbWs       = document.getElementById('db-ws');
+const dbFreezeBtn = document.getElementById('db-freeze-btn');
+
+function toggleFreeze() {
+  dbFrozen = !dbFrozen;
+  dbEl.classList.toggle('frozen', dbFrozen);
+  if (dbFreezeBtn) dbFreezeBtn.textContent = dbFrozen ? '▶' : '⏸';
+}
 
 document.addEventListener('keydown', e => {
   if (e.key === 'd' || e.key === 'D') {
     dbVisible = !dbVisible;
     dbEl.classList.toggle('hidden', !dbVisible);
+  }
+  if (e.key === 'p' || e.key === 'P') {
+    toggleFreeze();
   }
   if (e.key === 'f' || e.key === 'F') {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
@@ -79,15 +90,20 @@ document.addEventListener('keydown', e => {
   }
 });
 
+if (dbFreezeBtn) dbFreezeBtn.addEventListener('click', toggleFreeze);
+
 const _ftimes = [];
 function updateDebug() {
   if (!dbVisible) return;
+
   const now = performance.now();
   _ftimes.push(now);
   if (_ftimes.length > 60) _ftimes.shift();
   const span = _ftimes.at(-1) - _ftimes[0];
   dbFps.textContent = span > 0 ? `${Math.round((_ftimes.length-1)/span*1000)} fps` : '-- fps';
   dbWs.textContent  = `ws: ${wsStatus}`;
+
+  if (dbFrozen) return;  // audio values frozen — fps/ws still live
 
   const a = audio;
   [['rms',a.rms],['bass',a.bass],['mid',a.mid],['high',a.high],['pitch',a.pitch],['onset',a.onset]].forEach(([k,v]) => {
