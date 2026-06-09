@@ -11,7 +11,7 @@ from .boids import WORLD_W, WORLD_H
 
 MAX_BRANCHES  = 70
 MAX_PTS       = 32
-GROW_INTERVAL = 0.06  # seconds between new point additions
+GROW_INTERVAL = 0.06
 
 
 @dataclass
@@ -70,7 +70,7 @@ class Flora:
     def __init__(self) -> None:
         self._branches: List[Branch] = []
         self._onset_cd  = 0.0
-        self._dirty     = True   # send full state on first connection
+        self._dirty     = True
 
     def reset(self) -> None:
         self._branches.clear()

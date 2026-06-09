@@ -18,10 +18,10 @@
   <div id="welcome">
     <div class="welcome-inner">
       <h1>Резонанс</h1>
-      <p class="tagline">Живой мир, созданный вашим голосом</p>
+      <p class="tagline">Живой мир, рождённый звуком</p>
       <div class="privacy-note">
-        &#x1F512; Звук обрабатывается локально в браузере.<br />
-        Ничего не записывается и не передаётся на сервер.
+        &#x1F512; Звук анализируется локально в браузере.<br />
+        Сырой аудиосигнал никогда не покидает устройство — на сервер уходят только числа.
       </div>
 
       <div class="sound-guide">
@@ -56,16 +56,53 @@
         </div>
       </div>
 
+      <!-- Выбор источника звука -->
+      <div class="mode-tabs">
+        <button id="tab-mic"   class="mode-tab active">🎤 Голос</button>
+        <button id="tab-music" class="mode-tab">🎵 Музыка</button>
+      </div>
+
+      <!-- Подсказка для режима микрофона -->
+      <div id="mic-hint-wrap">
+        <p class="hint">Требует доступ к микрофону — или работает автономно без него</p>
+      </div>
+
+      <!-- Музыкальная панель -->
+      <div id="music-panel" hidden>
+        <div id="file-drop">
+          <input type="file" id="file-input" accept="audio/*" hidden />
+          <span class="drop-label">Перетащи аудиофайл или нажми для выбора</span>
+        </div>
+
+        <div class="ia-section">
+          <div class="ia-section-title">Поиск на Internet Archive</div>
+          <form id="ia-search-form" class="ia-form">
+            <input id="ia-search-input" type="text" placeholder="ambient · jazz · electronic…" autocomplete="off" />
+            <button type="submit">🔍</button>
+          </form>
+          <div id="ia-results"></div>
+        </div>
+
+        <div id="music-status" class="music-status">Выбери файл или найди трек выше</div>
+      </div>
+
       <button id="start-btn">Войти в мир</button>
-      <p class="hint">Требует доступ к микрофону — или работает автономно без него</p>
     </div>
   </div>
 
   <!-- Панель управления (появляется после входа) -->
   <div id="controls">
+    <!-- Текущий трек + пауза (только в музыкальном режиме) -->
+    <div id="music-controls">
+      <div id="music-track-info" class="music-track-info"></div>
+      <button id="music-toggle-btn" title="Пауза / Воспроизведение">⏸</button>
+      <button id="music-stop-btn"  title="Остановить">■</button>
+    </div>
+
+    <!-- Чувствительность (только в режиме микрофона) -->
     <div id="sensitivity-wrap">
       <div class="sens-header">
-        <span class="sens-title">Чувствительность микрофона</span>
+        <span class="sens-title">Чувствительность</span>
         <span id="sens-val">5</span>
       </div>
       <div class="sens-row">
@@ -74,11 +111,13 @@
         <span class="sens-edge">Резко</span>
       </div>
     </div>
+
     <button id="reset-btn" title="Сбросить мир [R]">↺ Сбросить</button>
+    <button id="home-btn"  title="Вернуться в меню">← Меню</button>
   </div>
 
   <!-- Отладочная панель -->
-  <div id="debug-overlay" class="hidden">
+  <div id="debug-overlay">
     <div class="debug-title">Аудио&nbsp;<span class="debug-hint">[D] показать/скрыть · [R] сбросить · [F] полный экран</span></div>
     <div class="debug-row"><span>RMS</span>    <div class="bar-wrap"><div class="bar"           id="db-rms"></div></div>   <span class="val" id="dv-rms">0.00</span></div>
     <div class="debug-row"><span>Бас</span>    <div class="bar-wrap"><div class="bar"           id="db-bass"></div></div>  <span class="val" id="dv-bass">0.00</span></div>

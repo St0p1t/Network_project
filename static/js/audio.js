@@ -13,17 +13,79 @@ export class AudioAnalyzer {
     this.onset   = 0;
     this.silence = 1;
 
-    this.sensitivity = 5;  // 1–10; 5 = default thresholds
-    this.autonomous = true;
-    this._ctx     = null;
-    this._an      = null;
-    this._td      = null;
-    this._fd      = null;
+    this.sensitivity = 5;
+    this.musicMode   = false;
+    this.autonomous  = true;
+    this._ctx      = null;
+    this._an       = null;
+    this._td       = null;
+    this._fd       = null;
+    this._audioEl  = null;
+    this._musicSrc = null;
 
     this._prevRms  = 0;
     this._onsetCd  = 0;
     this._silTimer = 0;
     this._autoT    = 0;
+  }
+
+  // Ensure AudioContext exists and is running (call inside a user-gesture handler).
+  async ensureContext() {
+    if (!this._ctx) {
+      this._ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (this._ctx.state === 'suspended') await this._ctx.resume();
+  }
+
+  // Switch to music mode: play audio from a URL (cors=true for cross-origin streams).
+  async initMusic(url, cors = false) {
+    await this.ensureContext();
+
+    // Disconnect previous music source
+    if (this._musicSrc) { this._musicSrc.disconnect(); this._musicSrc = null; }
+    if (this._audioEl)  { this._audioEl.pause(); this._audioEl.src = ''; this._audioEl = null; }
+
+    const el = document.createElement('audio');
+    if (cors) el.crossOrigin = 'anonymous';
+    el.src  = url;
+    el.loop = true;
+    this._audioEl = el;
+
+    const an = this._ctx.createAnalyser();
+    an.fftSize = 2048;
+    an.smoothingTimeConstant = 0.75;
+
+    const src = this._ctx.createMediaElementSource(el);
+    src.connect(an);
+    an.connect(this._ctx.destination);    // route to speakers
+    this._musicSrc = src;
+
+    this._an = an;
+    this._td = new Uint8Array(an.fftSize);
+    this._fd = new Uint8Array(an.frequencyBinCount);
+    this.autonomous = false;
+    this.musicMode  = true;
+
+    try { await el.play(); } catch (e) { console.warn('Audio play:', e); }
+  }
+
+  // Switch to music mode from a local File object.
+  initFile(file) {
+    return this.initMusic(URL.createObjectURL(file), false);
+  }
+
+  get paused()  { return this._audioEl?.paused ?? true; }
+  togglePlay()  {
+    if (!this._audioEl) return;
+    this._audioEl.paused ? this._audioEl.play() : this._audioEl.pause();
+  }
+  stopMusic() {
+    if (this._musicSrc) { this._musicSrc.disconnect(); this._musicSrc = null; }
+    if (this._audioEl)  { this._audioEl.pause(); this._audioEl.src = ''; this._audioEl = null; }
+    this.musicMode  = false;
+    this.autonomous = true;
+    this.rms = this.bass = this.mid = this.high = this.onset = 0;
+    this.silence = 1;
   }
 
   async init() {
@@ -109,13 +171,16 @@ export class AudioAnalyzer {
   }
 
   get state() {
+    // sensitivity 5 = neutral (×1); 1 = ×0.2 (deaf); 10 = ×2 (amplified).
+    // Pitch and silence are ratios — don't scale them.
+    const g = this.sensitivity / 5;
     return {
-      rms:     this.rms,
-      bass:    this.bass,
-      mid:     this.mid,
-      high:    this.high,
+      rms:     Math.min(1, this.rms    * g),
+      bass:    Math.min(1, this.bass   * g),
+      mid:     Math.min(1, this.mid    * g),
+      high:    Math.min(1, this.high   * g),
       pitch:   this.pitch,
-      onset:   this.onset,
+      onset:   Math.min(1, this.onset  * g),
       silence: this.silence,
     };
   }

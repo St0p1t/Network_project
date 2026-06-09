@@ -1,6 +1,7 @@
 import { AudioAnalyzer }    from './audio.js';
 import { ResonanceWS, decodeBoids } from './ws.js';
 import { initEnvGL }        from './env_gl.js';
+import { MusicUI }          from './music.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const WORLD_W = 1920;
@@ -53,7 +54,7 @@ function startWS() {
 
 // ── Debug overlay ─────────────────────────────────────────────────────────────
 const dbEl = document.getElementById('debug-overlay');
-let dbVisible = false;
+let dbVisible = true;   // visible by default; D toggles it off/on
 const dbBars = {}, dbVals = {};
 ['rms','bass','mid','high','pitch','onset'].forEach(k => {
   dbBars[k] = document.getElementById(`db-${k}`);
@@ -202,6 +203,7 @@ function frame(now) {
   frame._prev = now;
 
   audio.update(dt);
+  updateDebug();    // always — so overlay works on welcome screen too
 
   // Background always renders (visible behind welcome screen too)
   envGL?.draw(audio.state, time);
@@ -219,8 +221,6 @@ function frame(now) {
   drawFlora(fgCtx,  state.flora);
   drawBoids(fgCtx,  state.boids, audio.state);
   drawEvents(fgCtx, state.events);
-
-  updateDebug();
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
@@ -232,43 +232,79 @@ function resetWorld() {
   ws?.sendReset();
 }
 
+// ── Music UI ──────────────────────────────────────────────────────────────────
+
+const musicUI = new MusicUI(audio);
+musicUI.setup();
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
-const welcome    = document.getElementById('welcome');
-const startBtn   = document.getElementById('start-btn');
-const controls   = document.getElementById('controls');
-const resetBtn   = document.getElementById('reset-btn');
-const sensSlider = document.getElementById('sens-slider');
-const sensVal    = document.getElementById('sens-val');
+const welcome        = document.getElementById('welcome');
+const startBtn       = document.getElementById('start-btn');
+const controls       = document.getElementById('controls');
+const resetBtn       = document.getElementById('reset-btn');
+const homeBtn        = document.getElementById('home-btn');
+const sensSlider     = document.getElementById('sens-slider');
+const sensVal        = document.getElementById('sens-val');
+const musicControls  = document.getElementById('music-controls');
+const musicStopBtn   = document.getElementById('music-stop-btn');
+const musicToggleBtn = document.getElementById('music-toggle-btn');
 
 sensSlider.addEventListener('input', () => {
   audio.sensitivity = Number(sensSlider.value);
   sensVal.textContent = sensSlider.value;
 });
 
+function showWelcome() {
+  welcome.style.display = '';
+  welcome.classList.remove('fade-out');
+  startBtn.textContent = started ? 'Продолжить' : 'Войти в мир';
+  startBtn.disabled    = false;
+}
+
+function hideWelcome() {
+  welcome.classList.add('fade-out');
+  welcome.addEventListener('transitionend', () => welcome.style.display = 'none', { once: true });
+}
+
 startBtn.addEventListener('click', async () => {
+  // If world is already running, just close the overlay.
+  if (started) { hideWelcome(); return; }
+
   startBtn.textContent = 'Инициализация…';
   startBtn.disabled    = true;
 
-  try {
-    // Таймаут 5 с — чтобы не зависнуть при игнорировании диалога микрофона
-    await Promise.race([
-      audio.init(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
-    ]);
-  } catch (_) {
-    audio.autonomous = true;
+  if (musicUI.isMusicMode) {
+    await audio.ensureContext().catch(() => {});
+  } else {
+    try {
+      await Promise.race([
+        audio.init(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+      ]);
+    } catch (_) {
+      audio.autonomous = true;
+    }
   }
 
   startWS();
   started = true;
-
   controls.classList.add('visible');
 
-  welcome.classList.add('fade-out');
-  welcome.addEventListener('transitionend', () => welcome.style.display = 'none', { once: true });
-}, { once: true });
+  if (musicUI.isMusicMode) {
+    musicControls.style.display = 'flex';
+    musicUI.updateControls();
+  }
 
+  hideWelcome();
+});
+
+homeBtn.addEventListener('click', showWelcome);
 resetBtn.addEventListener('click', resetWorld);
+musicStopBtn.addEventListener('click', () => {
+  musicUI.stopMusic();
+  musicControls.style.display = 'none';
+  if (musicToggleBtn) musicToggleBtn.textContent = '⏸';
+});
 
 requestAnimationFrame(frame);

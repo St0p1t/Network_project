@@ -17,8 +17,9 @@ import struct
 from contextlib import asynccontextmanager
 from typing import Dict, List
 
+import httpx
 import numpy as np
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
 from .world.boids import Boids, WORLD_W, WORLD_H
@@ -145,7 +146,6 @@ app = FastAPI(docs_url=None, redoc_url=None, lifespan=_lifespan)
 @app.websocket("/ws")
 async def _ws(ws: WebSocket) -> None:
     await manager.connect(ws)
-    # Send full flora state immediately so new client sees existing plants
     initial_flora = flora.get_state(force=True)
     if initial_flora is not None:
         await ws.send_text(json.dumps(
@@ -167,6 +167,66 @@ async def _ws(ws: WebSocket) -> None:
         manager.disconnect(ws)
 
 
-# Static files must be mounted LAST (catch-all)
+# ── Internet Archive proxy ────────────────────────────────────────────────────
+
+_IA_SEARCH = "https://archive.org/advancedsearch.php"
+_IA_META   = "https://archive.org/metadata/{id}"
+_IA_DL     = "https://archive.org/download/{id}/{file}"
+
+
+@app.get("/api/ia-search")
+async def ia_search(q: str = Query(default="ambient electronic"), rows: int = Query(default=8, le=20)):
+    params = {
+        "q":       f"({q}) AND mediatype:audio",
+        "fl[]":    ["identifier", "title", "creator", "year"],
+        "sort[]":  "downloads desc",
+        "rows":    rows,
+        "page":    1,
+        "output":  "json",
+    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        r = await client.get(_IA_SEARCH, params=params)
+        r.raise_for_status()
+    docs = r.json().get("response", {}).get("docs", [])
+    results = []
+    for d in docs:
+        creator = d.get("creator", "")
+        if isinstance(creator, list):
+            creator = creator[0] if creator else ""
+        results.append({
+            "id":      d.get("identifier", ""),
+            "title":   d.get("title",      d.get("identifier", "")),
+            "creator": creator,
+            "year":    d.get("year", ""),
+        })
+    return {"results": results}
+
+
+@app.get("/api/ia-track/{identifier}")
+async def ia_track(identifier: str):
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        r = await client.get(_IA_META.format(id=identifier))
+        r.raise_for_status()
+    meta  = r.json()
+    files = meta.get("files", [])
+    # Prefer original MP3; fall back to any MP3
+    mp3 = next(
+        (f for f in files if f.get("name", "").lower().endswith(".mp3") and f.get("source") == "original"),
+        next((f for f in files if f.get("name", "").lower().endswith(".mp3")), None),
+    )
+    if not mp3:
+        raise HTTPException(status_code=404, detail="Нет MP3-файла для этого трека")
+    info  = meta.get("metadata", {})
+    title = info.get("title", identifier)
+    creator = info.get("creator", "")
+    if isinstance(creator, list):
+        creator = creator[0] if creator else ""
+    return {
+        "url":     _IA_DL.format(id=identifier, file=mp3["name"]),
+        "title":   title,
+        "creator": creator,
+    }
+
+
 _STATIC = os.path.join(os.path.dirname(__file__), "..", "static")
 app.mount("/", StaticFiles(directory=_STATIC, html=True), name="static")
